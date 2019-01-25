@@ -1,0 +1,17 @@
+id: sample_custom
+theme: bartik
+weight: 0
+status: true
+langcode: en
+region: sidebar_second
+plugin: sample_rendered
+settings:
+  label: 'Test Transmission'
+  provider: block_content
+  label_display: visible
+dependencies:
+  module:
+    - block_content
+    - system
+  theme:
+    - bartik

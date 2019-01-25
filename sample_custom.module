@@ -1,0 +1,99 @@
+<?php
+ 
+/**
+ * @file
+ * Contains sample_custom.module.
+ */
+
+use Drupal\block\Entity\Block;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\node\NodeInterface;
+use Drupal\Core\Access\AccessResult;
+use Drupal\taxonomy\Entity\Term;
+use Drupal\node\Entity\Node;
+
+/**
+ * Implements hook_install() to add new nodes and new taxonomy terms to the custom vocabulary.
+ */
+function sample_custom_install() {
+  //For demo purposes, setting vocabulary machine name and taxonomy term list here.
+  $vocab = 'headings';
+  $headings = ['Life', 'News', 'Art', 'Chem'];
+  _add_new_terms($vocab, $headings);
+
+  //Create new content of type Article and type Sample Custom Article.
+  $node_array = [];
+  $node_array_custom = [];
+  $node_array = ['type' => 'article', 'title' => 'Test Node', 'body' => 'The usual drill'];
+  $node_array_custom = ['type' => 'sample_custom_article', 'title' => 'Experiment Node', 'body' => 'Never before seen'];
+  _add_new_nodes($node_array);
+  _add_new_nodes($node_array_custom);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() to add a line of marked up text on Sample Custom Article type pages.
+ */
+function sample_custom_preprocess_node(&$variables) {
+  if ($variables['elements']['#node']) {
+    $node_type = $variables['elements']['#node']->getType();
+    if ($node_type == 'sample_custom_article') {
+      $variables['content']['new_content'] = [
+        '#markup' => '<p><i>Here is some amazing content</i></p>',
+      ];
+    }
+  }
+}
+
+/**
+ * Implements hook_block_access() to restrict block display to only Sample Custom Article type pages.
+ */
+function sample_custom_block_access(Block $block, $operation, AccountInterface $account) {
+  $node = \Drupal::routeMatch()->getParameter('node');
+  $access = FALSE;
+
+  if ($node instanceof NodeInterface) {
+    $node_type = $node->getType();
+    if ($node_type == 'sample_custom_article') {
+      $access = TRUE;
+    }
+  }
+
+  if ($operation == 'view' && $block->getPluginId() == 'sample_rendered') {
+    return AccessResult::forbiddenIf($access == FALSE)->addCacheableDependency($block);
+  }
+
+  return AccessResult::neutral();
+}
+
+/**
+ * Adds new taxonomy terms to the vocabulary specified.
+ */
+function _add_new_terms($vocab, $headings) {
+  foreach ($headings as $heading) {
+    $term = Term::create([
+      'parent' => [],
+      'name' => $heading,
+      'vid' => $vocab,
+    ])->save();
+  }
+}
+
+/**
+ * Adds new nodes of the content type specified.
+ */
+function _add_new_nodes($node_array) {
+  $node = Node::create([
+    'type' => $node_array['type']
+    ]);
+  $node->set('title', $node_array['title']);
+
+  $body = [
+    'value' => $node_array['body'],
+    'format' => 'basic_html',
+   ];
+  $node->set('body', $body);
+  $node->set('uid', 1);
+  $node->status = 1;
+  $node->enforceIsNew();
+  $node->save();
+}

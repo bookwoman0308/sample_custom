@@ -1,0 +1,8 @@
+name: Sample Custom
+type: module
+description: Custom module to demonstrate basic D8 skills
+package: custom
+version: 1.0
+core: 8.x
+dependencies:
+  - custom_content_type
